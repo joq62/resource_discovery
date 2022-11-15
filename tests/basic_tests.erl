@@ -56,12 +56,12 @@ rpc_multi_tests()->
     Target2=[type1,type2],
     [Node0,Node1,Node2]=lists:sort(test_nodes:get_nodes()),
     Date=date(),
-    {error,[eexists,type0,handle_call,resource_discovery_server,_]}=rpc:call(Node0,rd,rpc_multicall,[type0,erlang,date,[]]),  
+    {error,[eexists_resources]}=rpc:call(Node0,rd,rpc_multicall,[type0,erlang,date,[]]),  
     {[Date],[]}=rpc:call(Node1,rd,rpc_multicall,[type0,erlang,date,[]]),  
-    {error,[eexists,type0,handle_call,resource_discovery_server,_]}=rpc:call(Node2,rd,rpc_multicall,[type0,erlang,date,[]]),  
+    {error,[eexists_resources]}=rpc:call(Node2,rd,rpc_multicall,[type0,erlang,date,[]]),  
     
     {[Date,Date],[]}=rpc:call(Node0,rd,rpc_multicall,[type1,erlang,date,[]]),
-    {error,[eexists,type1,handle_call,resource_discovery_server,_]}=rpc:call(Node1,rd,rpc_multicall,[type1,erlang,date,[]]),
+    {error,[eexists_resources]}=rpc:call(Node1,rd,rpc_multicall,[type1,erlang,date,[]]),
     {[Date,Date],[]}=rpc:call(Node2,rd,rpc_multicall,[type1,erlang,date,[]]),
     {[Date],[]}=rpc:call(Node0,rd,rpc_multicall,[type2,erlang,date,[]]),
     
@@ -88,12 +88,12 @@ rpc_tests()->
     Target2=[type1,type2],
     [Node0,Node1,Node2]=lists:sort(test_nodes:get_nodes()),
     Date=date(),
-    {error,[eexists,type0,handle_call,resource_discovery_server,_]}=rpc:call(Node0,rd,rpc_call,[type0,erlang,date,[]]),  
+    {error,[eexists_resources]}=rpc:call(Node0,rd,rpc_call,[type0,erlang,date,[]]),  
     Date=rpc:call(Node1,rd,rpc_call,[type0,erlang,date,[]]),  
-    {error,[eexists,type0,handle_call,resource_discovery_server,_]}=rpc:call(Node2,rd,rpc_call,[type0,erlang,date,[]]),  
+    {error,[eexists_resources]}=rpc:call(Node2,rd,rpc_call,[type0,erlang,date,[]]),  
     
     Date=rpc:call(Node0,rd,rpc_call,[type1,erlang,date,[]]),
-    {error,[eexists,type1,handle_call,resource_discovery_server,_]}=rpc:call(Node1,rd,rpc_call,[type1,erlang,date,[]]),
+    {error,[eexists_resources]}=rpc:call(Node1,rd,rpc_call,[type1,erlang,date,[]]),
     Date=rpc:call(Node2,rd,rpc_call,[type1,erlang,date,[]]),
     Date=rpc:call(Node0,rd,rpc_call,[type2,erlang,date,[]]),
     
@@ -124,7 +124,7 @@ stop_start_tests()->
     rpc:call(Node0,init,stop,[]),
     timer:sleep(2000),
     {[],[Node0]}=rpc:call(Node2,rd,rpc_multicall,[type1,erlang,date,[]]),
-    {error,[no_resources,type1,resource_discovery_server,rpc_call,_]}=rpc:call(Node2,rd,rpc_call,[type1,erlang,date,[]]),
+    {error,[eexists_resources]}=rpc:call(Node2,rd,rpc_call,[type1,erlang,date,[]]),
     
 
     

@@ -82,7 +82,7 @@ init([]) ->
 handle_call({fetch_resources,Type},_From, State) ->
     Reply=case dict:find(Type,State#state.found_resource_tuples) of
 	      error->
-		  {error,[eexists,Type,?FUNCTION_NAME,?MODULE,?LINE]};
+		  {error,[eexists_resources]};
 	      {ok,Resources}->
 	%	  io:format("Fetch Resources ~p~n",[{node(),Type,Resources,?FUNCTION_NAME,?MODULE,?LINE}]),
 		  {ok,Resources}
@@ -268,7 +268,7 @@ delete_resource(Type,Resource,ResourceTuples)->
 rpc_call(Type, Module, Function, Args, Timeout) ->
     Reply=case rd:fetch_resources(Type) of
 	      {ok,[]}->
-		  {error,[no_resources,Type,?MODULE,?FUNCTION_NAME,?LINE]};
+		  {error,[eexists_resources]};
 	      {ok, Resources} ->
 		  [Resource|_]=Resources,
 		  case rpc:call(Resource, Module, Function, Args, Timeout) of
