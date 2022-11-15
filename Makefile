@@ -36,4 +36,4 @@ eunit:
 	mkdir ebin;
 	erlc -I include -o ebin src/*.erl;
 	erl -pa ebin -pa tests_ebin\
-	    -sname sd_test -run $(m) start -setcookie cookie_test
+	    -sname rd_test -run $(m) start -setcookie cookie_test

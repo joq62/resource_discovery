@@ -26,13 +26,13 @@ start()->
    
     ok=setup(),
     
-    ok=basic:start(),  
+    ok=basic_tests:start(),  
     
     
            
     io:format("Test OK !!! ~p~n",[?MODULE]),
-    timer:sleep(2000),
-    init:stop(),
+ %   timer:sleep(2000),
+ %   init:stop(),
     ok.
 
 %% --------------------------------------------------------------------
@@ -51,8 +51,8 @@ start()->
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
   
-    ok=application:start(tests),
-    pong=sd:ping(),
+ 
+  
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
 
     ok.
