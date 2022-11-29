@@ -64,7 +64,7 @@ rpc_multicall(Type, Module, Function, Args, Timeout) ->
      ?SERVER:rpc_multicall(Type, Module, Function, Args,Timeout).
 
 ping() ->
-    gen_server:call(?SERVER, {ping}).
+    gen_server:call(?SERVER, {ping},infinity).
 %% ====================================================================!
 %% External functions
 %% ====================================================================!

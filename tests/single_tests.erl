@@ -9,7 +9,7 @@
 %%% Pod consits beams from all services, app and app and sup erl.
 %%% The setup of envs is
 %%% -------------------------------------------------------------------
--module(basic_tests).      
+-module(single_tests).      
  
 -export([start/0]).
 %% --------------------------------------------------------------------
@@ -196,28 +196,11 @@ connect_tests()->
 
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    ok=test_nodes:start_nodes(),
-    [Node0,Node1,Node2]=test_nodes:get_nodes(),
-    [Node0,Node1,Node2]=lists:sort([Node0,Node1,Node2]),
-    [pong,pong,pong,pong,pong,
-     pong,pong,pong,pong]=[rpc:call(N1,net_adm,ping,[N2])||N1<-[Node0,Node1,Node2],
-				     N2<-[Node0,Node1,Node2]],
-  %  [true,true,true]=[rpc:call(N,file,get_cwd,[],2000)||N<-test_nodes:get_nodes()],
-    [true,true,true]=[rpc:call(N,code,add_patha,["tests_ebin"],2000)||N<-[Node0,Node1,Node2]],
-    [true,true,true]=[rpc:call(N,code,add_patha,["ebin"],2000)||N<-[Node0,Node1,Node2]],
-    {ok,Pid}=rpc:call(Node0,resource_discovery_server,start,[]),
-    {ok,_}=rpc:call(rd_test@c50,resource_discovery_server,start,[]),
-    pong=rpc:call(rd_test@c50,rd,ping,[]),
-    [{ok,_},{ok,_},{ok,_}]=[rpc:call(N,resource_discovery_server,start,[],2000)||N<-[Node0,Node1,Node2]],
-
-    [pong,pong,pong,pong,pong,
-     pong,pong,pong,pong]=[rpc:call(N1,net_adm,ping,[N2])||N1<-[Node0,Node1,Node2],
-				     N2<-[Node0,Node1,Node2]],
-
-    [Node0,Node1,Node2]=[rpc:call(N,erlang,node,[],2000)||N<-[Node0,Node1,Node2]],
-   % [Node0,Node1,Node2]=[rpc:call(N,rd,trade_resources,[],2000)||N<-[Node0,Node1,Node2]],
-
-    [pong,pong,pong]=[rpc:call(Nx,rd,ping,[],2000)||Nx<-[Node0,Node1,Node2]], 
+   
+    {ok,_}=resource_discovery_server:start(), 
+    pong=rd:ping(),
+    
+    
     
     
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),

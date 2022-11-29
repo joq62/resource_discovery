@@ -25,8 +25,7 @@
 	 rpc_multicall/5
 
 	]).
-
--export([ping/0]).
+% -export([ping/0]).
 
 %% gen_server callbacks
 
@@ -46,8 +45,7 @@ start()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()-> gen_server:call(?MODULE, {stop},infinity).
 
 
-ping()-> 
-    gen_server:call(?MODULE, {ping},infinity).
+% ping()-> gen_server:call(?MODULE, {ping},infinity).
 
 %% ====================================================================
 %% Server functions
@@ -63,7 +61,8 @@ ping()->
 %% --------------------------------------------------------------------
 init([]) ->
        
-    heartbeat_server:start(),
+    {ok,_}=heartbeat_server:start(),
+    io:format(" Server started ~p~n",[{node(),?MODULE,?LINE}]),
     {ok, #state{target_resource_types = [],
 	        local_resource_tuples = dict:new(),
 		found_resource_tuples = dict:new()}
