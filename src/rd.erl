@@ -19,7 +19,8 @@
 	 rpc_call/4,
 	 rpc_call/5,
 	 rpc_multicall/4,
-	 rpc_multicall/5
+	 rpc_multicall/5,
+	 ping/0
 
 	]).
 
@@ -62,7 +63,8 @@ rpc_multicall(Type, Module, Function, Args) ->
 rpc_multicall(Type, Module, Function, Args, Timeout) ->
      ?SERVER:rpc_multicall(Type, Module, Function, Args,Timeout).
 
-
+ping() ->
+    gen_server:call(?SERVER, {ping}).
 %% ====================================================================!
 %% External functions
 %% ====================================================================!

@@ -143,14 +143,18 @@ normal_tests()->
     Local0=[{type0,Node0},{type1,Node0}],Local1=[{type1,Node1}],Local2=[{type2,Node2},{type21,Node2}],
     Target0=[type1,type2],Target1=[type0,type21],Target2=[type1,type2],
     % Add Node0
+    pung=rpc:call(Node0,rd,ping,[]),
     [rpc:call(Node0,rd,add_local_resource,[Type,Instance],5000)||{Type,Instance}<-Local0],
     [rpc:call(Node0,rd,add_target_resource_type,[Type],5000)||Type<-Target0],
     ok=rpc:call(Node0,rd,trade_resources,[],5000),
 
+    pung=rpc:call(Node1,rd,ping,[]),
     [rpc:call(Node1,rd,add_local_resource,[Type,Instance],5000)||{Type,Instance}<-Local1],
     [rpc:call(Node1,rd,add_target_resource_type,[Type],5000)||Type<-Target1],
     ok=rpc:call(Node1,rd,trade_resources,[],5000),
 
+
+    pung=rpc:call(Node2,rd,ping,[]),
     [rpc:call(Node2,rd,add_local_resource,[Type,Instance],5000)||{Type,Instance}<-Local2],
     [rpc:call(Node2,rd,add_target_resource_type,[Type],5000)||Type<-Target2],
     ok=rpc:call(Node2,rd,trade_resources,[],5000),
