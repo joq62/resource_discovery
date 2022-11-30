@@ -26,7 +26,8 @@ start()->
    
     ok=setup(),
     
-    ok=basic_tests:start(),  
+  %  ok=basic_tests:start(),  
+    ok=single_tests:start(),  
     
     
            
