@@ -20,6 +20,8 @@
 	 rpc_call/5,
 	 rpc_multicall/4,
 	 rpc_multicall/5,
+
+	 get_state/0,
 	 ping/0
 
 	]).
@@ -65,6 +67,8 @@ rpc_multicall(Type, Module, Function, Args, Timeout) ->
 
 ping() ->
     gen_server:call(?SERVER, {ping},infinity).
+get_state() ->
+    gen_server:call(?SERVER, {get_state},infinity).
 %% ====================================================================!
 %% External functions
 %% ====================================================================!

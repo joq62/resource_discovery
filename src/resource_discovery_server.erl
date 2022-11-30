@@ -106,6 +106,10 @@ handle_call( {delete_local_resource,Type,Resource},_From,State) ->
     {reply,Reply,NewState};
 
 
+handle_call({get_state}, _From, State) ->
+    Reply=State,
+    {reply, Reply, State};  
+
 handle_call({ping}, _From, State) ->
     Reply=pong,
     {reply, Reply, State};  
