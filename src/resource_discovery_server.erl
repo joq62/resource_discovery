@@ -276,17 +276,18 @@ rpc_call(Type, Module, Function, Args, Timeout) ->
 		  {error,[eexists_resources]};
 	      {ok, Resources} ->
 		  [Resource|_]=Resources,
-		  case rpc:call(Resource, Module, Function, Args, Timeout) of
-		      {badrpc, _Reason} ->
-			  case rd:delete_local_resource(Type, Resource) of
-			      {error,Reason}->
-				  {error,Reason};
-			      ok->
-				  rd:rpc_call(Type, Module, Function, Args, Timeout)
-			  end;
-		      R ->
-			  R
-		  end;
+		  rpc:call(Resource, Module, Function, Args, Timeout);
+	%	  case rpc:call(Resource, Module, Function, Args, Timeout) of
+	%	      {badrpc, _Reason} ->
+	%		  case rd:delete_local_resource(Type, Resource) of
+	%		      {error,Reason}->
+	%			  {error,Reason};
+	%		      ok->
+	%			  rd:rpc_call(Type, Module, Function, Args, Timeout)
+	%		  end;
+	%	      R ->
+	%		  R
+	%	  end;
 	      {error,Reason}->
 		  {error,Reason}
 	  end,
@@ -306,7 +307,7 @@ rpc_multicall(Type, Module, Function, Args, Timeout) ->
 		   {error,Reason};
 	       {ok, Resources} -> 
 		   {Resl, BadNodes} = rpc:multicall(Resources, Module, Function, Args, Timeout),
-		   [rd:delete_local_resource(Type, BadNode) || BadNode <- BadNodes],
+	%	   [rd:delete_local_resource(Type, BadNode) || BadNode <- BadNodes],
 		   {Resl, BadNodes}
 	   end,
     Result.
