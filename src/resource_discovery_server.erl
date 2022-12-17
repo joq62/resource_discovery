@@ -107,7 +107,9 @@ handle_call( {delete_local_resource,Type,Resource},_From,State) ->
 
 
 handle_call({get_state}, _From, State) ->
-    Reply=State,
+    Reply=[{target_resource_types,State#state.target_resource_types},
+	   {local_resource_tuples,State#state.local_resource_tuples},
+	   {found_resource_tuples, State#state.found_resource_tuples}],
     {reply, Reply, State};  
 
 handle_call({ping}, _From, State) ->
