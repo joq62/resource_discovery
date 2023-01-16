@@ -5,7 +5,8 @@
               {mod,{resource_discovery_app,[]}},
               {applications,[kernel,stdlib]},
               {env,[]},
-              {modules,[heartbeat_server,rd,resource_discovery_app,
-                        resource_discovery_server,resource_discovery_sup]},
+              {modules,[heartbeat_server,rd,resource_discovery,
+                        resource_discovery_app,resource_discovery_server,
+                        resource_discovery_sup]},
               {licenses,["Apache-2.0"]},
               {links,[]}]}.
