@@ -7,16 +7,17 @@
 %%% 
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(heartbeat_server).
+-module(heartbeat).
 
 -behaviour(gen_server).
 
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
-% -include("").
+-include("log.api").
 %% --------------------------------------------------------------------
 %% External exports
+
 -define(Heartbeat,10*1000).
 
 -export([heartbeat/0]).
@@ -25,7 +26,7 @@
 
 %% gen_server callbacks
 
--export([start/0,stop/0]).
+-export([start_link/0,stop/0]).
 
 -export([init/1, handle_call/3,handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -36,7 +37,7 @@
 %% ====================================================================
 %% External functions
 %% ====================================================================
-start()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start_link()-> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 stop()-> gen_server:call(?MODULE, {stop},infinity).
 
 
@@ -63,6 +64,7 @@ init([]) ->
        
     Heartbeat=?Heartbeat,
     spawn(fun()->local_heartbeat(Heartbeat) end),
+%    ?LOG_NOTICE("Server started ",[]),
     
     {ok, #state{heartbeat=Heartbeat}
     }.

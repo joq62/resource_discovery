@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc org top level supervisor.
+%% @doc ops top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(resource_discovery_sup).
+-module(tests_sup).
 
 -behaviour(supervisor).
 
@@ -29,8 +29,8 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [#{id=>resource_discovery,
-		   start=>{resource_discovery_server,start,[]}}],
+    ChildSpecs = [#{id=>sd,
+		    start=>{sd,start,[]}}],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions

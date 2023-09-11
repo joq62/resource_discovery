@@ -3,14 +3,14 @@
 %% @end
 %%%-------------------------------------------------------------------
  
--module(resource_discovery_app).
+-module(rd_app). 
 
 -behaviour(application).
 
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-    resource_discovery_sup:start_link().
+    rd_sup:start_link().
 
 stop(_State) ->
     ok.

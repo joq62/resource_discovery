@@ -1,6 +1,6 @@
 %%% Type Definitions
-%% resource_typ: service module   
-%% resource: Node
+%% resource_typ:{lgh_home_automation,Vsn}, zigbee_hw, disc,dbase,kvs, mail, 
+%% resource: {ServerModule,Node}
 %% resource_tuple: {{lgh_home_automation,"1.0.0"},[{ServerModule,Node1}}
 %% {ResourceType1,[Node1,Node2..]}
 %% 

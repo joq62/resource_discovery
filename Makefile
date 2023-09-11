@@ -1,71 +1,57 @@
 all:
-	rm -rf  *~ */*~ src/*.beam tests/*.beam tests_ebin erl_cra*;
-	rm -rf logs log *.pod_dir;
-	rm -rf _build tests_ebin ebin;
-	rm -rf Mnesia.*;
+	rm -rf  *~ */*~ src/*.beam test/*.beam test_ebin erl_cra*;
 	rm -rf *.dir;
-	rm -f rebar.lock;
-	rm -rf common resource_discovery nodelog;
-#	tests 
-	mkdir tests_ebin;
-	erlc -I include -o tests_ebin tests/*.erl;
-	rm -rf tests_ebin;
-#  	dependencies
-	mkdir ebin;
+	rm -rf _build;
+	rm -rf logs;
+	rm -rf ebin
+	rm -rf rebar.lock;
+#	mkdir ebin;		
 	rebar3 compile;	
-	cp _build/default/lib/*/ebin/* ebin;
+#	cp _build/default/lib/*/ebin/* ebin;
 	rm -rf _build*;
-	git add -f *;
+#	git add -f *;
+	git add *;
 	git commit -m $(m);
 	git push;
 	echo Ok there you go!
 build:
-	rm -rf  *~ */*~ src/*.beam tests/*.beam tests_ebin erl_cra*;
-	rm -rf logs log *.pod_dir;
-	rm -rf _build tests_ebin ebin;
-	rm -rf Mnesia.*;
-	rm -rf *.dir;
-	rm -f rebar.lock;
-	rm -rf common resource_discovery nodelog;
-#	tests 
-	mkdir tests_ebin;
-	erlc -I include -o tests_ebin tests/*.erl;
-	rm -rf tests_ebin;
-#  	dependencies
-	mkdir ebin;
+	rm -rf  *~ */*~ src/*.beam test/*.beam test_ebin erl_cra*;
+	rm -rf _build;
+	rm -rf ebin
+	rm -rf rebar.lock;
+	mkdir ebin;		
 	rebar3 compile;	
 	cp _build/default/lib/*/ebin/* ebin;
-	rm -rf _build*;
+	rm -rf _build test_ebin;
 clean:
-	rm -rf  *~ */*~ src/*.beam tests/*.beam tests_ebin erl_cra*;
-	rm -rf logs log *.pod_dir;
-	rm -rf _build tests_ebin ebin;
-	rm -rf Mnesia.*;
-	rm -rf *.dir;
-	rm -f rebar.lock;
-	rm -rf common resource_discovery nodelog;
+	rm -rf  *~ */*~ src/*.beam test/*.beam test_ebin erl_cra*;
+	rm -rf _build;
+	rm -rf ebin
+	rm -rf logs;
+	rm -rf rebar.lock
 
 eunit:
-	rm -rf  *~ */*~ src/*.beam tests/*.beam tests_ebin erl_cra*;
-	rm -rf logs log *.pod_dir;
-	rm -rf _build tests_ebin ebin;
-	rm -rf Mnesia.*;
+#	Standard
+	rm -rf  *~ */*~ src/*.beam test/*.beam test_ebin erl_cra*;
 	rm -rf *.dir;
-	rm -f rebar.lock;
-	rm -rf common resource_discovery nodelog;
-#	tests 
-	mkdir tests_ebin;
-	erlc -I include -o tests_ebin tests/*.erl;
+	rm -rf _build;
+	rm -rf ebin
+	rm -rf logs;
+	rm -rf rebar.lock
+#	Application speciic
+#	test
+	mkdir test_ebin;
+	cp test/*.app test_ebin;
+	erlc -I include -I /home/joq62/erlang/include -o test_ebin test/*.erl;
 #  	dependencies
-	rm -rf common;
-	git clone https://github.com/joq62/common.git;
-#	rm -rf resource_discovery;
-#	git clone https://github.com/joq62/resource_discovery.git;
-#	rm -rf nodelog;
-#	git clone https://github.com/joq62/nodelog.git;
 #	Applications
 	mkdir ebin;		
 	rebar3 compile;	
 	cp _build/default/lib/*/ebin/* ebin;
 	rm -rf _build*;
-	erl -pa */ebin -pa ebin -pa tests_ebin -sname do_test -run $(m) start $(a) -setcookie cookie_test
+#	Application specific
+	erl -pa ebin -pa test_ebin\
+	    -pa ../../misc/paas/log/ebin\
+	    -sname do_test\
+	    -run $(m) start\
+	    -setcookie test_cookie
