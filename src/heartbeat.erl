@@ -18,7 +18,7 @@
 %% --------------------------------------------------------------------
 %% External exports
 
--define(Heartbeat,10*1000).
+-define(Heartbeat,60*1000).
 
 -export([heartbeat/0]).
 
