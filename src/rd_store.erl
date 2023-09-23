@@ -75,8 +75,10 @@
 %%-----------------------------------------------------------------------
 -spec new() -> ok.
 new() ->
-    ets:new(?RS, [named_table, public]),
-    ets:new(?LKVStore, [named_table, public]),
+    ?RS=ets:new(?RS, [named_table, public]),
+    % io:format("Rs  ~p~n",[{Rs,?MODULE,?LINE}]), 
+    ?LKVStore=ets:new(?LKVStore, [named_table, public]),
+   % io:format("Lkv  ~p~n",[{Lkv,?MODULE,?LINE}]), 
     ok.
  
 %%--------------------------------------------------------------------
@@ -117,7 +119,7 @@ get_callback_modules() ->
 -spec delete_callback_module(atom()) -> ok.
 delete_callback_module(CallBackModule) ->
     NewCallBackModules = lists:delete(CallBackModule, get_callback_modules()),
-    ets:insert(?LKVStore, {callback_modules, NewCallBackModules}),
+    true=ets:insert(?LKVStore, {callback_modules, NewCallBackModules}),
     ok.
 
 %%-----------------------------------------------------------------------
@@ -127,7 +129,7 @@ delete_callback_module(CallBackModule) ->
 %%-----------------------------------------------------------------------
 -spec store_target_resource_types([atom()]) -> ok.
 store_target_resource_types([H|_] = TargetTypes) when is_atom(H) ->
-    ets:insert(?LKVStore, {target_types, lists:usort(get_target_resource_types() ++ TargetTypes)}),
+    true=ets:insert(?LKVStore, {target_types, lists:usort(get_target_resource_types() ++ TargetTypes)}),
     ok.
      
 %%-----------------------------------------------------------------------
@@ -157,7 +159,7 @@ delete_target_resource_type(TargetType) ->
 %%-----------------------------------------------------------------------
 -spec store_local_resource_tuples([resource_tuple()]) -> ok.
 store_local_resource_tuples([{_,_}|_] = LocalResourceTuples) ->
-    ets:insert(?LKVStore, {local_resources, lists:usort(get_local_resource_tuples() ++ LocalResourceTuples)}),
+    true=ets:insert(?LKVStore, {local_resources, lists:usort(get_local_resource_tuples() ++ LocalResourceTuples)}),
     ok.
      
 %%-----------------------------------------------------------------------
@@ -167,7 +169,8 @@ store_local_resource_tuples([{_,_}|_] = LocalResourceTuples) ->
 -spec get_local_resource_tuples() -> [resource_tuple()].
 get_local_resource_tuples() ->
     case ets:lookup(?LKVStore, local_resources) of
-	[{local_resources, LocalResources}] -> LocalResources;
+	[{local_resources, LocalResources}] -> 
+	    LocalResources;
 	[] -> []
     end.
 

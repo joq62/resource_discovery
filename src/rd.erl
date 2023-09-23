@@ -14,7 +14,7 @@
 %%--------------------------------------------------------------------
 
 -type resource_type() :: atom(). % gen_server or lib module
--type resource() :: node().      % node()
+-type resource() :: {Node :: node(), Module :: atom()}.      % node()
 %-type resource_tuple() :: {resource_type(), resource()}. % {Module,Node} 
 
 %% API
@@ -26,10 +26,8 @@
 	]).
 
 -export([
-	 rpc_call/4,
-	 rpc_call/5,
-	 rpc_multicall/4,
-	 rpc_multicall/5
+	 call/4,
+	 call/5
 	]).
 
 
@@ -197,6 +195,7 @@ handle_call(UnMatchedSignal, From, State) ->
 
 handle_cast({trade_resources}, State) ->
     ResourceTuples=rd_store:get_local_resource_tuples(),
+ %   io:format(" ResourceTuples ~p~n",[{node(),ResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),
     AllNodes =[node()|nodes()],
     lists:foreach(
       fun(Node) ->
@@ -207,22 +206,23 @@ handle_cast({trade_resources}, State) ->
     {noreply, State};
 
 handle_cast({trade_resources, {ReplyTo,RemoteResourceTuples}},State) ->
-    io:format("ReplyTo,RemoteResourceTuples ~p~n",[{node(),ReplyTo,RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
+  %  io:format("ReplyTo,RemoteResourceTuples ~p~n",[{node(),ReplyTo,RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
   
-%    io:format("ReplyTo,Remotes ~p~n",[{node(),ReplyTo,dict:to_list(Remotes),?FUNCTION_NAME,?MODULE,?LINE}]),
-%    FilteredRemotes=resources_for_types(TargetTypes,Remotes),
+  %  io:format("ReplyTo,Remotes ~p~n",[{node(),ReplyTo,dict:to_list(Remotes),?FUNCTION_NAME,?MODULE,?LINE}]),
+  %  FilteredRemotes=resources_for_types(TargetTypes,Remotes),
     TargetTypes=rd_store:get_target_resource_types(),
     FilteredRemotes=[{ResourceType,Resource}||{ResourceType,Resource}<-RemoteResourceTuples,
 					      true=:=lists:member(ResourceType,TargetTypes)],
 
   
-    io:format(" TargetTypes,FilteredRemotes ~p~n",[{node(),TargetTypes,FilteredRemotes,?FUNCTION_NAME,?MODULE,?LINE}]),
+  %  io:format(" TargetTypes,FilteredRemotes ~p~n",[{node(),TargetTypes,FilteredRemotes,?FUNCTION_NAME,?MODULE,?LINE}]),
     ok=rd_store:store_resource_tuples(FilteredRemotes),
     case ReplyTo of
         noreply ->
 	    ok;
 	_ ->
 	   Locals=rd_store:get_local_resource_tuples(),
+%	    io:format("Locals  ~p~n",[{node(),Locals,?FUNCTION_NAME,?MODULE,?LINE}]),  
 	   gen_server:cast({?MODULE,ReplyTo},
 			   {trade_resources, {noreply, Locals}})
     end,
@@ -342,15 +342,15 @@ delete_resource(ResourceType,Resource,ResourceTuples)->
 %% Description: Shutdown the server
 %% Returns: any (ignored by gen_server)
 %% --------------------------------------------------------------------
-rpc_call(ResourceType, Module, Function, Args, Timeout) ->
+call(ResourceType, Module, Function, Args, Timeout) ->
     Reply=case rd_store:get_resources(ResourceType) of
 	      {error,Reason}->
 		  {error,Reason};
 	      []->
 		  {error,[eexists_resources]};
 	      Resources ->
-		  [Resource|_]=Resources,
-		  rpc:call(Resource, Module, Function, Args, Timeout)
+		  [{Node,_}|_]=Resources,
+		  rpc:call(Node, Module, Function, Args, Timeout)
 	%	  case rpc:call(Resource, Module, Function, Args, Timeout) of
 	%	      {badrpc, _Reason} ->
 	%		  case rd:delete_local_resource(ResourceType, Resource) of
@@ -366,24 +366,34 @@ rpc_call(ResourceType, Module, Function, Args, Timeout) ->
 	  end,
     Reply.
 
-rpc_call(ResourceType, Module, Function, Args) ->
-    rpc_call(ResourceType, Module, Function, Args, 60000).
+call(ResourceType, Function, Args, Timeout) ->
+ %   io:format(" ResourceType, Function, Args, Timeout ~p~n",[{ResourceType, Function, Args, Timeout, ?MODULE,?LINE}]),
+    Reply=case rd_store:get_resources(ResourceType) of
+	      {error,Reason}->
+		  {error,Reason};
+	      []->
+		  {error,[eexists_resources]};
+	      Resources ->
+		  [{Node,Module}|_]=Resources,
+		  rpc:call(Node, Module, Function, Args, Timeout)
+	%	  case rpc:call(Resource, Module, Function, Args, Timeout) of
+	%	      {badrpc, _Reason} ->
+	%		  case rd:delete_local_resource(ResourceType, Resource) of
+	%		      {error,Reason}->
+	%			  {error,Reason};
+	%		      ok->
+	%			  rd:rpc_call(ResourceType, Module, Function, Args, Timeout)
+	%		  end;
+	%	      R ->
+	%		  R
+	%	  end;
+	     
+	  end,
+    Reply.
+
 
 %% --------------------------------------------------------------------
 %% Function: terminate/2
 %% Description: Shutdown the server
 %% Returns: any (ignored by gen_server)
 %% --------------------------------------------------------------------
-rpc_multicall(ResourceType, Module, Function, Args, Timeout) ->
-    Result=case  rd_store:get_resources(ResourceType) of
-	       {error,Reason} -> 
-		   {error,Reason};
-	       Resources -> 
-		   {Resl, BadNodes} = rpc:multicall(Resources, Module, Function, Args, Timeout),
-	%	   [rd:delete_local_resource(ResourceType, BadNode) || BadNode <- BadNodes],
-		   {Resl, BadNodes}
-	   end,
-    Result.
-
-rpc_multicall(ResourceType, Module, Function, Args) ->
-    rpc_multicall(ResourceType, Module, Function, Args, 60000).
