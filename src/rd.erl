@@ -22,7 +22,8 @@
 	 add_local_resource/2,
 	 delete_local_resource/2,	 
 	 fetch_resources/1,
-	 trade_resources/0
+	 trade_resources/0,
+	 get_state/0
 	]).
 
 -export([
@@ -79,6 +80,13 @@ trade_resources() ->
 
 start()->
     application:start(?MODULE).
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+get_state()-> 
+    gen_server:call(?SERVER, {get_state},infinity).
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -163,9 +171,9 @@ handle_call( {add_local_resource,ResourceType,Resource}, _From, State) ->
 
 
 handle_call({get_state}, _From, State) ->
-    Reply=[{target_resource_types,State#state.target_resource_types},
-	   {local_resource_tuples,State#state.local_resource_tuples},
-	   {found_resource_tuples, State#state.found_resource_tuples}],
+    Reply=[{target_resource_types,rd_store:get_target_resource_types()},
+	   {local_resource_tuples,rd_store:get_local_resource_tuples()}
+	   ],
     {reply, Reply, State};  
 
 handle_call({ping}, _From, State) ->
