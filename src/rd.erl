@@ -203,7 +203,7 @@ handle_call(UnMatchedSignal, From, State) ->
 
 handle_cast({trade_resources}, State) ->
     ResourceTuples=rd_store:get_local_resource_tuples(),
- %   io:format(" ResourceTuples ~p~n",[{node(),ResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),
+    io:format(" I have  ~p~n",[{node(),ResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),
     AllNodes =[node()|nodes()],
     lists:foreach(
       fun(Node) ->
@@ -214,23 +214,21 @@ handle_cast({trade_resources}, State) ->
     {noreply, State};
 
 handle_cast({trade_resources, {ReplyTo,RemoteResourceTuples}},State) ->
-  %  io:format("ReplyTo,RemoteResourceTuples ~p~n",[{node(),ReplyTo,RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
   
-  %  io:format("ReplyTo,Remotes ~p~n",[{node(),ReplyTo,dict:to_list(Remotes),?FUNCTION_NAME,?MODULE,?LINE}]),
-  %  FilteredRemotes=resources_for_types(TargetTypes,Remotes),
+    io:format("Receiving node got following Resources tuples from node ~p~n",[{node(),RemoteResourceTuples,ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
+
     TargetTypes=rd_store:get_target_resource_types(),
+    io:format("Receiving node wants following TargetTypes ~p~n",[{node(),TargetTypes,?MODULE,?LINE}]),
     FilteredRemotes=[{ResourceType,Resource}||{ResourceType,Resource}<-RemoteResourceTuples,
 					      true=:=lists:member(ResourceType,TargetTypes)],
-
-  
-  %  io:format(" TargetTypes,FilteredRemotes ~p~n",[{node(),TargetTypes,FilteredRemotes,?FUNCTION_NAME,?MODULE,?LINE}]),
+    io:format("Receiving node will store following TargetResources from sender ~p~n",[{node(),FilteredRemotes,?MODULE,?LINE}]),
     ok=rd_store:store_resource_tuples(FilteredRemotes),
     case ReplyTo of
         noreply ->
 	    ok;
 	_ ->
 	   Locals=rd_store:get_local_resource_tuples(),
-%	    io:format("Locals  ~p~n",[{node(),Locals,?FUNCTION_NAME,?MODULE,?LINE}]),  
+	%   io:format("Receiving node replys with following resources tuples  ~p~n",[{node(),Locals,?FUNCTION_NAME,?MODULE,?LINE}]),  
 	   gen_server:cast({?MODULE,ReplyTo},
 			   {trade_resources, {noreply, Locals}})
     end,
@@ -383,7 +381,7 @@ call(ResourceType, Function, Args, Timeout) ->
 	      []->
 		  {error,[eexists_resources]};
 	      Resources ->
-		  [{Node,Module}|_]=Resources,
+		  [{Module,Node}|_]=Resources,
 		  rpc:call(Node, Module, Function, Args, Timeout)
 	%	  case rpc:call(Resource, Module, Function, Args, Timeout) of
 	%	      {badrpc, _Reason} ->

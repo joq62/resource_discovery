@@ -220,8 +220,15 @@ delete_local_resource_tuple(LocalResource) ->
 get_resources(Type) ->
     case ets:lookup(?RS, Type) of
 	[{Type, Resources}] -> Resources;
+			      
 	[] -> []
     end.
+
+glurk([],_Type,Acc)->
+    Acc;
+glurk([Resource|T],Type,Acc)->
+    glurk(T,Type,[{Type,Resource}|Acc]).
+
 
 %%-----------------------------------------------------------------------
 %% @doc Adds a new resource.
