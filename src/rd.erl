@@ -349,7 +349,8 @@ call(ResourceType, Module, Function, Args, Timeout) ->
 	      []->
 		  {error,[eexists_resources]};
 	      Resources ->
-		  [{Node,_}|_]=Resources,
+		  [{_,Node}|_]=Resources,
+		%  [{Node,_}|_]=Resources,
 		  rpc:call(Node, Module, Function, Args, Timeout)
 	%	  case rpc:call(Resource, Module, Function, Args, Timeout) of
 	%	      {badrpc, _Reason} ->
