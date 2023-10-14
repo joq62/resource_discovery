@@ -20,7 +20,8 @@
 %% API
 -export([add_target_resource_type/1,
 	 add_local_resource/2,
-	 delete_local_resource/2,	 
+	 delete_local_resource_tuple/2,
+	 get_delete_local_resource_tuples/0,
 	 fetch_resources/1,
 	 trade_resources/0,
 	 get_state/0
@@ -64,8 +65,10 @@ add_target_resource_type(ResourceType) ->
     gen_server:call(?SERVER, {add_target_resource_type, ResourceType},infinity).
 add_local_resource(ResourceType, Resource) ->
     gen_server:call(?SERVER, {add_local_resource, ResourceType, Resource},infinity).
-delete_local_resource(ResourceType, Resource) ->
-    gen_server:call(?SERVER, {delete_local_resource, ResourceType, Resource}).
+delete_local_resource_tuple(ResourceType, Resource) ->
+    gen_server:call(?SERVER, {delete_local_resource_tuple, ResourceType, Resource},infinity).
+get_delete_local_resource_tuples() ->
+    gen_server:call(?SERVER, {get_delete_local_resource_tuples},infinity).
 
 fetch_resources(ResourceType) ->
     gen_server:call(?SERVER, {fetch_resources, ResourceType}).
@@ -145,19 +148,14 @@ init([]) ->
 handle_call({fetch_resources,Type},_From, State) ->
     Reply=rd_store:get_resources(Type),
     {reply, Reply, State};
-handle_call( {delete_local_resource,Type,Resource},_From,State) ->
-    ResourceTuples=State#state.found_resource_tuples,
-  %  io:format("Delete ResourceTuples ~p~n",[{node(),dict:to_list(ResourceTuples),?FUNCTION_NAME,?MODULE,?LINE}]),   
-    Reply=case delete_resource(Type,Resource,ResourceTuples) of
-	      {error,Reason}->
-		  NewState=State,
-		  {error,Reason};
-	      NewResourceTuples->
-		 % io:format("Delete NewResourceTuples ~p~n",[{node(),dict:to_list(NewResourceTuples),?FUNCTION_NAME,?MODULE,?LINE}]),
-		  NewState=State#state{found_resource_tuples=NewResourceTuples},
-		  ok
-	  end,
-    {reply,Reply,NewState};
+
+handle_call( {delete_local_resource_tuple,Type,Resource},_From,State) ->
+    Reply=rd_store:delete_local_resource_tuple({Type,Resource}),
+    {reply,Reply,State};
+
+handle_call( {get_delete_local_resource_tuples},_From,State) ->
+    Reply=rd_store:get_deleted_resource_tuples(),
+    {reply,Reply,State};
 
 handle_call({add_target_resource_type,ResourceType}, _From, State) ->
     TargetTypes=rd_store:get_target_resource_types(), % TargetTypes=State#state.target_resource_types,
@@ -173,7 +171,7 @@ handle_call( {add_local_resource,ResourceType,Resource}, _From, State) ->
 handle_call({get_state}, _From, State) ->
     Reply=[{target_resource_types,rd_store:get_target_resource_types()},
 	   {local_resource_tuples,rd_store:get_local_resource_tuples()}
-	   ],
+	  ],
     {reply, Reply, State};  
 
 handle_call({ping}, _From, State) ->
@@ -192,45 +190,44 @@ handle_call(UnMatchedSignal, From, State) ->
 %% Handling cast messages
 %% @end
 %%--------------------------------------------------------------------
-
-
-%handle_cast( {delete_local_resource,ResourceType,Resource}, State) ->
-%    ResourceTuples=State#state.local_resource_tuples,
-%    NewResourceTuples=delete_resource(ResourceType,Resource,ResourceTuples),
- %   io:format("NewResourceTuples ~p~n",[{node(),dict:to_list(NewResourceTuples),?FUNCTION_NAME,?MODULE,?LINE}]),
-%    {noreply, State#state{local_resource_tuples=NewResourceTuples}};
-
-
 handle_cast({trade_resources}, State) ->
     ResourceTuples=rd_store:get_local_resource_tuples(),
-    io:format(" I have  ~p~n",[{node(),ResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),
+    DeletedResourceTuples=rd_store:get_deleted_resource_tuples(),
+%    io:format(" I have and delete ~p~n",[{node(),ResourceTuples,DeletedResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),
     AllNodes =[node()|nodes()],
     lists:foreach(
       fun(Node) ->
 	      gen_server:cast({?MODULE,Node},
-			     {trade_resources, {node(),ResourceTuples}})
+			      {trade_resources, {node(),{ResourceTuples,DeletedResourceTuples}}})
       end,
       AllNodes),
     {noreply, State};
 
-handle_cast({trade_resources, {ReplyTo,RemoteResourceTuples}},State) ->
+handle_cast({trade_resources, {ReplyTo,{RemoteResourceTuples,DeletedResourceTuples}}},State) ->
+    io:format("Receiving node ***************************** ~p~n",[{node(),?FUNCTION_NAME,?MODULE,?LINE}]),    
+    io:format("From node  ~p~n",[{ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
+    io:format("RemoteResourceTuples  ~p~n",[{RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
+    io:format("DeletedResourceTuples  ~p~n",[{DeletedResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
   
-    io:format("Receiving node got following Resources tuples from node ~p~n",[{node(),RemoteResourceTuples,ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
-
+    %% Delete 
+    Deleted=[rd_store:delete_resource_tuple(ResourceTuple)||ResourceTuple<-DeletedResourceTuples],
+    io:format("Receiving node Deleted  ~p~n",[{node(),Deleted,?FUNCTION_NAME,?MODULE,?LINE}]),  
     TargetTypes=rd_store:get_target_resource_types(),
     io:format("Receiving node wants following TargetTypes ~p~n",[{node(),TargetTypes,?MODULE,?LINE}]),
     FilteredRemotes=[{ResourceType,Resource}||{ResourceType,Resource}<-RemoteResourceTuples,
 					      true=:=lists:member(ResourceType,TargetTypes)],
     io:format("Receiving node will store following TargetResources from sender ~p~n",[{node(),FilteredRemotes,?MODULE,?LINE}]),
+		   
     ok=rd_store:store_resource_tuples(FilteredRemotes),
     case ReplyTo of
         noreply ->
 	    ok;
 	_ ->
-	   Locals=rd_store:get_local_resource_tuples(),
+	    Locals=rd_store:get_local_resource_tuples(),
+	    DeletedLocals=rd_store:get_deleted_resource_tuples(),
 	%   io:format("Receiving node replys with following resources tuples  ~p~n",[{node(),Locals,?FUNCTION_NAME,?MODULE,?LINE}]),  
 	   gen_server:cast({?MODULE,ReplyTo},
-			   {trade_resources, {noreply, Locals}})
+			   {trade_resources, {noreply, {Locals,DeletedLocals}}})
     end,
     {noreply, State};
 

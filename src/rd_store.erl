@@ -78,7 +78,9 @@ new() ->
     ?RS=ets:new(?RS, [named_table, public]),
     % io:format("Rs  ~p~n",[{Rs,?MODULE,?LINE}]), 
     ?LKVStore=ets:new(?LKVStore, [named_table, public]),
-   % io:format("Lkv  ~p~n",[{Lkv,?MODULE,?LINE}]), 
+   % io:format("Lkv  ~p~n",[{Lkv,?MODULE,?LINE}]),
+    ?DL=ets:new(?DL, [named_table, public]),
+    
     ok.
  
 %%--------------------------------------------------------------------
@@ -90,6 +92,7 @@ new() ->
 delete() ->
     ets:delete(?RS),
     ets:delete(?LKVStore),
+    ets:delete(?DL),
     ok.
 
 %%-----------------------------------------------------------------------
@@ -196,6 +199,7 @@ get_deleted_resource_tuples() ->
 delete_local_resource_tuple(LocalResource) ->
     %% first get local resource tuples
     LocalResources = get_local_resource_tuples(),
+    io:format("LocalResources ~p~n",[{LocalResources,?MODULE,?LINE}]), 
     %% only add to deleted cache if resource actually exist
     case lists:member(LocalResource, LocalResources) of
 	true ->

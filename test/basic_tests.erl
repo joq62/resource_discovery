@@ -116,6 +116,11 @@ stop_start_tests()->
     [Node0,Node1,Node2]=lists:sort(test_nodes:get_nodes()),
     [pong,pong,pong]=[net_adm:ping(N)||N<- [Node0,Node1,Node2]],
  
+    %% {type0,erlang},{type1,filelib},{type2,test_module2}
+    %% Node0 = Provide:{type0,type1}, want {type1,type2}
+    %% Node1 = Provide {type1},       want {type0,type2}  
+    %% Node2 = Provide {type0,type2}, want {type1,type2}
+
     Local0=[{type0,{Node0,erlang}},{type1,{Node0,filelib}}],
     Local1=[{type1,{Node1,filelib}}],
     Local2=[{type2,{Node2,test_module2}},{type0,{Node2,filelib}}],
@@ -123,20 +128,62 @@ stop_start_tests()->
     Target1=[type0,type2],
     Target2=[type1,type2],
 
-    [{filelib,'n0@c50'},{filelib,'n1@c50'}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1])),
+    %% Node0
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type2])),
+    
+    %% Node1
+    [{erlang,Node0},{filelib,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type2])),
+
+    %% Node2
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type2])),
+
     []=lists:sort(rpc:call(Node1,rd,fetch_resources,[type1])),
     []=lists:sort(rpc:call(Node2,rd,fetch_resources,[type0])),
     
-    %% kill Node0 => Node1 will not get type0 and Node2 type1 from Node1 
-    ok=slave:stop(Node0),
-    timer:sleep(2000),
-    rpc:call(Node1,rd,trade_resources,[],5000),
-    timer:sleep(5000),
+    %% remove type0 from Node0 
+    [{type0,{erlang,Node0}},{type1,{filelib,Node0}}]=lists:sort(rpc:call(Node0,rd_store,get_local_resource_tuples,[],5000)),
+    []=lists:sort(rpc:call(Node0,rd_store,get_deleted_resource_tuples,[],5000)),
+    ok=rpc:call(Node0,rd,delete_local_resource_tuple,[type0,{erlang,n0@c50}],5000),
+    [{type1,{filelib,Node0}}]=lists:sort(rpc:call(Node0,rd_store,get_local_resource_tuples,[],5000)),
+    [{type0,{erlang,Node0}}]=lists:sort(rpc:call(Node0,rd_store,get_deleted_resource_tuples,[],5000)),
     
-    [{test_module2,'n2@c50'}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type2])),
-    [{filelib,'n0@c50'},{filelib,'n1@c50'}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),    
+    rpc:call(Node0,rd,trade_resources,[],5000),
+    timer:sleep(3000),
 
+    %% Node0
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type2])),
     
+    %% Node1
+    [{filelib,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type2])),
+
+    %% Node2
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),
+    [{test_module2,Node2}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type2])),
+    
+    %% remove type2 from Node2
+    ok=rpc:call(Node2,rd,delete_local_resource_tuple,[type2,{test_module2,Node2}],5000),
+    rpc:call(Node2,rd,trade_resources,[],5000),
+    timer:sleep(3000),
+    
+     %% Node0
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1])),
+    []=lists:sort(rpc:call(Node0,rd,fetch_resources,[type2])),
+    
+    %% Node1
+    [{filelib,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0])),
+    []=lists:sort(rpc:call(Node1,rd,fetch_resources,[type2])),
+
+    %% Node2
+    [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),
+    []=lists:sort(rpc:call(Node2,rd,fetch_resources,[type2])),
+    
+    
+  
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     ok.
 %% --------------------------------------------------------------------
