@@ -200,7 +200,7 @@ get_deleted_resource_tuples() ->
 delete_local_resource_tuple(LocalResource) ->
     %% first get local resource tuples
     LocalResources = get_local_resource_tuples(),
-    io:format("LocalResources ~p~n",[{LocalResources,?MODULE,?LINE}]), 
+%    io:format("LocalResources ~p~n",[{LocalResources,?MODULE,?LINE}]), 
     %% only add to deleted cache if resource actually exist
     case lists:member(LocalResource, LocalResources) of
 	true ->

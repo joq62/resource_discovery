@@ -230,7 +230,7 @@ handle_cast({trade_resources}, State) ->
     {noreply, State};
 
 handle_cast({trade_resources, {ReplyTo,{RemoteResourceTuples,DeletedResourceTuples}}},State) ->
-    io:format("Receiving node ***************************** ~p~n",[{node(),?FUNCTION_NAME,?MODULE,?LINE}]),    
+%    io:format("Receiving node ***************************** ~p~n",[{node(),?FUNCTION_NAME,?MODULE,?LINE}]),    
 %    io:format("From node  ~p~n",[{ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
 %    io:format("RemoteResourceTuples  ~p~n",[{RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
 %    io:format("DeletedResourceTuples  ~p~n",[{DeletedResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
@@ -288,14 +288,14 @@ handle_cast(UnMatchedSignal, State) ->
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: normal | term(), NewState :: term()}.
 handle_info({nodedown,NodeDown}, State) ->
-    io:format("node(), NodeDown ~p~n",[{node(),NodeDown,?MODULE,?LINE}]),
-     io:format("node(),get_all_resources ~p~n",[{node(),rd_store:get_all_resources(),?MODULE,?LINE}]),
+%    io:format("node(), NodeDown ~p~n",[{node(),NodeDown,?MODULE,?LINE}]),
+%     io:format("node(),get_all_resources ~p~n",[{node(),rd_store:get_all_resources(),?MODULE,?LINE}]),
     DeletedResourceTuples=[{Type,{Module,ResourceNode}}||{Type,{Module,ResourceNode}}<-rd_store:get_all_resources(),
 							ResourceNode=:=NodeDown],
-    io:format("node(), DeletedResourceTuples ~p~n",[{node(),DeletedResourceTuples,?MODULE,?LINE}]),
+  %  io:format("node(), DeletedResourceTuples ~p~n",[{node(),DeletedResourceTuples,?MODULE,?LINE}]),
     %% Delete cache
     DeletedCache=[{rd_store:delete_resource_tuple(ResourceTuple),ResourceTuple}||ResourceTuple<-DeletedResourceTuples],
-    io:format("DeletedCache ~p~n",[{node(),DeletedCache,?MODULE,?LINE}]),
+%    io:format("DeletedCache ~p~n",[{node(),DeletedCache,?MODULE,?LINE}]),
     %% Remove monitoring
     RemovedMonitoring=[{Node,erlang:monitor_node(Node,false)}||{_Type,{Module,Node}}<-DeletedResourceTuples],
     L1=[MonitoredNode||MonitoredNode<-State#state.monitored_nodes,
@@ -303,7 +303,7 @@ handle_info({nodedown,NodeDown}, State) ->
     UpdatedMonitoredNodes=lists:usort(L1),
     NewState=State#state{monitored_nodes=UpdatedMonitoredNodes}, 
     rd:trade_resources(),
-    io:format("node(), UpdatedMonitoredNodes ~p~n",[{NodeDown,UpdatedMonitoredNodes,?MODULE,?LINE}]),
+  %  io:format("node(), UpdatedMonitoredNodes ~p~n",[{NodeDown,UpdatedMonitoredNodes,?MODULE,?LINE}]),
     {noreply, NewState};
 
 handle_info(Info, State) ->
