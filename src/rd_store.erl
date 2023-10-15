@@ -31,6 +31,7 @@
          get_target_resource_types/0,
          get_num_resource_types/0,
 	 get_num_resource/1,
+	 get_all_resources/0,
          get_resource_types/0
         ]).
 
@@ -220,6 +221,26 @@ delete_local_resource_tuple(LocalResource) ->
 %% @doc Outputs a list of all resources for a particular type.
 %% @end
 %%-----------------------------------------------------------------------
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+get_all_resources()->
+    Tab2List=ets:tab2list(?RS),
+    get_all_resources(Tab2List,[]).
+get_all_resources([],Acc)->
+    Acc;
+get_all_resources([{Type,ListOfResources}|T],Acc)->
+    ResourceTupleList=[{Type,{Module,Node}}||{Module,Node}<-ListOfResources],
+    NewAcc=lists:append(ResourceTupleList,Acc),
+    get_all_resources(T,NewAcc).
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+
 -spec get_resources(resource_type()) -> [resource()].
 get_resources(Type) ->
     case ets:lookup(?RS, Type) of

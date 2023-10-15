@@ -1,0 +1,59 @@
+*  Applications adds  target types and local reosurece tuples to rd
+
+REmoval/deletion of an applications local resources tuples when application is removed or node down on all other rds in the cluster
+
+1) control removes the provider
+
+2) control removes the node with providers on
+
+3) node crashes - all providers down
+
+4) provider crashes on a running node
+
+
+Events:
+	New wanted types and offered resourcetuples are announced
+	Existing resource tuple is removed
+		 node down
+		 node oveloaded (long ques) , applicatin timeout
+		 application stopped
+		 application crashed
+		 appplication overloaded (long delay,time out)
+
+
+
+How to detect an event
+node-nodedown: rd monitors the nodes and on a "nodedown" the node related resource tuples are deleted
+node-overloaded: long ques - not implemented]
+
+application stopped/crashed:
+
+{badrpc,timeout}
+{badrpc,{'EXIT',{undef,[{M,F,A,[]}]}}}
+{badrpc,{'EXIT',{noproc,{gen_server,call,[M,{F},infinity]}}}}
+{badrpc,{'EXIT',{noproc,{gen_server,call,[M,{F,A},infinity]}}}}
+
+
+rd: handles nodes , when announcing new tuple start monitoring and on node down
+    remove the the tuples
+
+application:
+
+{badrpc,timeout} - application decides if it is a "normal case"
+
+
+{badrpc,{'EXIT',{undef,[{M,F,A,[]}]}}} - send a "black list message to rd
+{badrpc,{'EXIT',{noproc,{gen_server,call,[M,{F},infinity]}}}}
+{badrpc,{'EXIT',{noproc,{gen_server,call,[M,{F,A},infinity]}}}}
+
+
+
+Not present:
+    node down -> all types at that node are not available
+    node up -> pong/=rd:call(type,ping,[],5000) do ping to the type 
+
+a. "Local" discover along the time"At every fetch rd checks if node and applications is available
+   if not -> delete the target resource tuple on that node when rd fetches an resources 
+
+b. Sync interval: In the periodic sync of rd
+   

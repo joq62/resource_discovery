@@ -24,6 +24,8 @@
 	 get_delete_local_resource_tuples/0,
 	 fetch_resources/1,
 	 trade_resources/0,
+	 get_monitored_nodes/0,
+	 get_all_resources/0,
 	 get_state/0
 	]).
 
@@ -49,7 +51,8 @@
 
 -record(state, {target_resource_types,  % I want part
 	        local_resource_tuples,  % I have part
-	        found_resource_tuples  % Local cache of found resources
+	        found_resource_tuples,  % Local cache of found resources
+		monitored_nodes
 	       }).
 
 %%%===================================================================
@@ -83,6 +86,22 @@ trade_resources() ->
 
 start()->
     application:start(?MODULE).
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+get_all_resources()-> 
+    gen_server:call(?SERVER, {get_all_resources},infinity).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+get_monitored_nodes()-> 
+    gen_server:call(?SERVER, {get_monitored_nodes},infinity).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -133,7 +152,7 @@ init([]) ->
     %  {ok,_}=heartbeat_server:start(),
    % ?LOG_NOTICE("Server started ",[]),
     
-    {ok, #state{}}.
+    {ok, #state{monitored_nodes=[]}}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -167,6 +186,13 @@ handle_call( {add_local_resource,ResourceType,Resource}, _From, State) ->
     Reply=rd_store:store_local_resource_tuples([{ResourceType,Resource}]),
     {reply,Reply, State};
 
+handle_call( {get_all_resources}, _From, State) ->
+    Reply=rd_store:get_all_resources(),
+    {reply,Reply, State};
+
+handle_call({get_monitored_nodes}, _From, State) ->
+    Reply=State#state.monitored_nodes,
+    {reply, Reply, State}; 
 
 handle_call({get_state}, _From, State) ->
     Reply=[{target_resource_types,rd_store:get_target_resource_types()},
@@ -205,20 +231,33 @@ handle_cast({trade_resources}, State) ->
 
 handle_cast({trade_resources, {ReplyTo,{RemoteResourceTuples,DeletedResourceTuples}}},State) ->
     io:format("Receiving node ***************************** ~p~n",[{node(),?FUNCTION_NAME,?MODULE,?LINE}]),    
-    io:format("From node  ~p~n",[{ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
-    io:format("RemoteResourceTuples  ~p~n",[{RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
-    io:format("DeletedResourceTuples  ~p~n",[{DeletedResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
+%    io:format("From node  ~p~n",[{ReplyTo,?FUNCTION_NAME,?MODULE,?LINE}]),  
+%    io:format("RemoteResourceTuples  ~p~n",[{RemoteResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
+%    io:format("DeletedResourceTuples  ~p~n",[{DeletedResourceTuples,?FUNCTION_NAME,?MODULE,?LINE}]),  
   
-    %% Delete 
-    Deleted=[rd_store:delete_resource_tuple(ResourceTuple)||ResourceTuple<-DeletedResourceTuples],
-    io:format("Receiving node Deleted  ~p~n",[{node(),Deleted,?FUNCTION_NAME,?MODULE,?LINE}]),  
+    %% Delete resource tuples and remove monitoring
+    Deleted=[{rd_store:delete_resource_tuple(ResourceTuple),ResourceTuple}||ResourceTuple<-DeletedResourceTuples],
+    RemovedMonitoring=[{Node,erlang:monitor_node(Node,false)}||{_Type,{Module,Node}}<-DeletedResourceTuples],
+    L1=[MonitoredNode||MonitoredNode<-State#state.monitored_nodes,
+		    false=:=lists:keymember(MonitoredNode,1,RemovedMonitoring)],
+    
+%    io:format("Receiving node Deleted  ~p~n",[{node(),Deleted,?FUNCTION_NAME,?MODULE,?LINE}]),  
     TargetTypes=rd_store:get_target_resource_types(),
-    io:format("Receiving node wants following TargetTypes ~p~n",[{node(),TargetTypes,?MODULE,?LINE}]),
+%    io:format("Receiving node wants following TargetTypes ~p~n",[{node(),TargetTypes,?MODULE,?LINE}]),
     FilteredRemotes=[{ResourceType,Resource}||{ResourceType,Resource}<-RemoteResourceTuples,
 					      true=:=lists:member(ResourceType,TargetTypes)],
-    io:format("Receiving node will store following TargetResources from sender ~p~n",[{node(),FilteredRemotes,?MODULE,?LINE}]),
-		   
+ %   io:format("Receiving node will store following TargetResources from sender ~p~n",[{node(),FilteredRemotes,?MODULE,?LINE}]),
+    
     ok=rd_store:store_resource_tuples(FilteredRemotes),
+    AddedMonitoringResult=[{Node,erlang:monitor_node(Node,true)}||{_Type,{Module,Node}}<-FilteredRemotes,
+							    false=:=lists:keymember(Node,1,L1)],
+    
+ %   io:format("AddedMonitoringResult ~p~n",[{node(),AddedMonitoringResult,?MODULE,?LINE}]),
+    AddedNodes=[Node||{Node,_}<-AddedMonitoringResult],
+    UpdatedMonitoredNodes=lists:usort(lists:append(AddedNodes,L1)),
+    NewState=State#state{monitored_nodes=UpdatedMonitoredNodes}, 
+ %   io:format("UpdatedMonitoredNodes ~p~n",[{node(),UpdatedMonitoredNodes,?MODULE,?LINE}]),
+    
     case ReplyTo of
         noreply ->
 	    ok;
@@ -229,7 +268,8 @@ handle_cast({trade_resources, {ReplyTo,{RemoteResourceTuples,DeletedResourceTupl
 	   gen_server:cast({?MODULE,ReplyTo},
 			   {trade_resources, {noreply, {Locals,DeletedLocals}}})
     end,
-    {noreply, State};
+ 
+    {noreply, NewState};
 
 
 handle_cast(UnMatchedSignal, State) ->
@@ -247,6 +287,25 @@ handle_cast(UnMatchedSignal, State) ->
 	  {noreply, NewState :: term(), Timeout :: timeout()} |
 	  {noreply, NewState :: term(), hibernate} |
 	  {stop, Reason :: normal | term(), NewState :: term()}.
+handle_info({nodedown,NodeDown}, State) ->
+    io:format("node(), NodeDown ~p~n",[{node(),NodeDown,?MODULE,?LINE}]),
+     io:format("node(),get_all_resources ~p~n",[{node(),rd_store:get_all_resources(),?MODULE,?LINE}]),
+    DeletedResourceTuples=[{Type,{Module,ResourceNode}}||{Type,{Module,ResourceNode}}<-rd_store:get_all_resources(),
+							ResourceNode=:=NodeDown],
+    io:format("node(), DeletedResourceTuples ~p~n",[{node(),DeletedResourceTuples,?MODULE,?LINE}]),
+    %% Delete cache
+    DeletedCache=[{rd_store:delete_resource_tuple(ResourceTuple),ResourceTuple}||ResourceTuple<-DeletedResourceTuples],
+    io:format("DeletedCache ~p~n",[{node(),DeletedCache,?MODULE,?LINE}]),
+    %% Remove monitoring
+    RemovedMonitoring=[{Node,erlang:monitor_node(Node,false)}||{_Type,{Module,Node}}<-DeletedResourceTuples],
+    L1=[MonitoredNode||MonitoredNode<-State#state.monitored_nodes,
+		    false=:=lists:keymember(MonitoredNode,1,RemovedMonitoring)],
+    UpdatedMonitoredNodes=lists:usort(L1),
+    NewState=State#state{monitored_nodes=UpdatedMonitoredNodes}, 
+    rd:trade_resources(),
+    io:format("node(), UpdatedMonitoredNodes ~p~n",[{NodeDown,UpdatedMonitoredNodes,?MODULE,?LINE}]),
+    {noreply, NewState};
+
 handle_info(Info, State) ->
     io:format("unmatched_signal ~p~n",[{Info,?MODULE,?LINE}]),
     {noreply, State}.

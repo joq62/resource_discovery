@@ -32,7 +32,7 @@ start()->
    
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     timer:sleep(2000),
-   init:stop(),
+  % init:stop(),
     ok.
 
 

@@ -127,10 +127,18 @@ stop_start_tests()->
     Target0=[type1,type2],
     Target1=[type0,type2],
     Target2=[type1,type2],
+    
+    %%
+    [Node0,Node1,Node2]=rpc:call(Node0,rd,get_monitored_nodes,[],5000),
 
     %% Node0
     [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1])),
     [{test_module2,Node2}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type2])),
+
+    [{type1,{filelib,'n0@c50'}},
+     {type1,{filelib,'n1@c50'}},
+     {type2,{test_module2,'n2@c50'}}
+    ]=lists:sort(rpc:call(Node0,rd,get_all_resources,[],5000)),
     
     %% Node1
     [{erlang,Node0},{filelib,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0])),
@@ -182,7 +190,24 @@ stop_start_tests()->
     [{filelib,Node0},{filelib,Node1}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),
     []=lists:sort(rpc:call(Node2,rd,fetch_resources,[type2])),
     
+    %% kill Node0
+
+    slave:stop(Node0),
     
+    %% Node0
+    {badrpc,nodedown}=rpc:call(Node0,rd,fetch_resources,[type1]),
+    {badrpc,nodedown}=rpc:call(Node0,rd,fetch_resources,[type2]),
+
+    timer:sleep(5000),
+    
+    %% Node1
+    [{filelib,Node2}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0])),
+    []=lists:sort(rpc:call(Node1,rd,fetch_resources,[type2])),
+    [Node2]=rpc:call(Node1,rd,get_monitored_nodes,[],5000),
+    %% Node2
+    [{filelib,Node1}]=lists:sort(rpc:call(Node2,rd,fetch_resources,[type1])),
+    []=lists:sort(rpc:call(Node2,rd,fetch_resources,[type2])),
+    [Node1]=rpc:call(Node2,rd,get_monitored_nodes,[],5000),
   
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     ok.
