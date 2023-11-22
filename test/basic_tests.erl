@@ -16,7 +16,7 @@
 %% Include files
 %% --------------------------------------------------------------------
 -define(ClusterName,"test_cluster").
-
+-define(MaxDetectTime,3000).
 
 
 %% --------------------------------------------------------------------
@@ -240,19 +240,21 @@ normal_tests()->
    
     Date=erlang:date(),
 
-   % Add Node0
+
+    % Add Node0
     ok=rpc:call(Node0,rd,start,[]),
     pong=rpc:call(Node0,rd,ping,[]),
     [ok=rpc:call(Node0,rd,add_local_resource,[Type,Instance],5000)||{Type,Instance}<-Local0],
     [ok=rpc:call(Node0,rd,add_target_resource_type,[Type],5000)||Type<-Target0],
     ok=rpc:call(Node0,rd,trade_resources,[],5000),
-
     timer:sleep(5000),
   
-
+    % Test TargetTypesResources are not available type2 for node0
+    {error,["Following TargetTypes are not available ",[type2]]}=rpc:call(Node0,rd,detect_target_resources,[Target0,?MaxDetectTime],5000),
+    
     [{filelib,Node0}]=rpc:call(Node0,rd,fetch_resources,[type1],5000),
     []=rpc:call(Node0,rd,fetch_resources,[type2],5000),
-   
+    
     
     Date=rpc:call(Node0,rd,call,[type1,erlang,date,[],5000],6000),  
     true=rpc:call(Node0,rd,call,[type1,is_file,["Makefile"],5000],6000),
@@ -279,6 +281,11 @@ normal_tests()->
     ok=rpc:call(Node2,rd,trade_resources,[],5000),
     
     timer:sleep(3000),
+
+    % Test TargetTypesResources are available for node0
+    ok=rpc:call(Node0,rd,detect_target_resources,[Target0,?MaxDetectTime],5000),
+    
+    
     [{filelib,'n0@c50'},{filelib,'n1@c50'}]=lists:sort(rpc:call(Node0,rd,fetch_resources,[type1],5000)), 
     []=lists:sort(rpc:call(Node1,rd,fetch_resources,[type1],5000)),
     [{erlang,'n0@c50'},{filelib,'n2@c50'}]=lists:sort(rpc:call(Node1,rd,fetch_resources,[type0],5000)),
@@ -336,7 +343,6 @@ setup()->
 
  %   [pong,pong,pong]=[rpc:call(Nx,rd,ping,[],2000)||Nx<-[Node0,Node1,Node2]], 
     
-    
-    io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+ 
 
     ok.
