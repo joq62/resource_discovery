@@ -17,6 +17,10 @@
 -type resource() :: {Node :: node(), Module :: atom()}.      % node()
 %-type resource_tuple() :: {resource_type(), resource()}. % {Module,Node} 
 
+
+-export([
+	 detect_target_resources/2
+	]).
 %% API
 -export([add_target_resource_type/1,
 	 add_local_resource/2,
@@ -58,6 +62,17 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+detect_target_resources(TargetTypes,MaxDetectTime)->
+    lib_rd:detect_target_resources(TargetTypes,MaxDetectTime).
+    
+
+
 
 %%--------------------------------------------------------------------
 %% @doc
