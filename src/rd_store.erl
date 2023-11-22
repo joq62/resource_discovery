@@ -249,12 +249,6 @@ get_resources(Type) ->
 	[] -> []
     end.
 
-glurk([],_Type,Acc)->
-    Acc;
-glurk([Resource|T],Type,Acc)->
-    glurk(T,Type,[{Type,Resource}|Acc]).
-
-
 %%-----------------------------------------------------------------------
 %% @doc Adds a new resource.
 %% @end

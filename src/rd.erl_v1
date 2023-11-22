@@ -372,6 +372,47 @@ format_status(_Opt, Status) ->
 %% Description: Shutdown the server
 %% Returns: any (ignored by gen_server)
 %% --------------------------------------------------------------------
+add_resources([{ResourceType,Resource}|T],ResourceTuples)->
+    add_resources(T,add_resource(ResourceType,Resource,ResourceTuples));
+add_resources([],ResourceTuples) ->
+    ResourceTuples.
+
+add_resource(ResourceType,Resource,ResourceTuples)->
+    case dict:find(ResourceType,ResourceTuples) of
+	{ok,ResourceList}->
+	    NewList=[Resource|lists:delete(Resource,ResourceList)],
+	    dict:store(ResourceType,NewList,ResourceTuples);
+	error ->
+	    dict:store(ResourceType,[Resource],ResourceTuples)
+    end.
+
+resources_for_types(ResourceTypes,ResourceTuples)->
+    Fun =
+	fun(ResourceType,Acc) ->
+		case dict:find(ResourceType,ResourceTuples) of
+		    {ok,List}->
+			[{ResourceType, Resource} || Resource <- List] ++ Acc;
+		    error ->
+			Acc
+		end
+	end,
+    lists:foldl(Fun,[],ResourceTypes).
+
+%% --------------------------------------------------------------------
+%% Function: terminate/2
+%% Description: Shutdown the server
+%% Returns: any (ignored by gen_server)
+%% --------------------------------------------------------------------
+delete_resource(ResourceType,Resource,ResourceTuples)->
+    Result=case dict:find(ResourceType,ResourceTuples) of
+	       {ok,ResourceList}->
+		   NewList=lists:delete(Resource,ResourceList),
+		   dict:store(ResourceType,NewList,ResourceTuples);
+	       error ->
+		   {error,[eexists,ResourceType,?MODULE,?FUNCTION_NAME,?LINE]}
+						% ResourceTuples
+	   end,    
+    Result.
 
 %% --------------------------------------------------------------------
 %% Function: terminate/2

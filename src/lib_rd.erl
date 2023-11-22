@@ -50,7 +50,7 @@ detect(_TargetTypes,_Interval,0,true,_Acc) ->
 detect(_TargetTypes,_Interval,0,false,MissingTargetTypes) ->
     {error,["Following TargetTypes are not available ",MissingTargetTypes]};
 
-detect(TargetTypes,Interval,NumberOfAttemps,false,MissingTargetTypes)->
+detect(TargetTypes,Interval,NumberOfAttemps,false,_MissingTargetTypes)->
     TargetResources=[{TargetType,rd:fetch_resources(TargetType)}||TargetType<-TargetTypes],
     NewMissingTargetTypes=[TargetType||{TargetType,[]}<-TargetResources],
  %   io:format("NewMissingTargetTypes ~p~n",[{NewMissingTargetTypes,?MODULE,?LINE}]),  
